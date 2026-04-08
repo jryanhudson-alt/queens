@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Restaurant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  address       String
+  city          String   @default("Austin")
+  state         String   @default("TX")
+  lat           Float
+  lng           Float
+  phone         String?
+  website       String?
+  instagram     String?
+  cuisine       String
+  priceRange    Int      @default(2)
+  description   String?
+  coverImage    String?
+  photos        String   @default("[]")
+  rating        Float    @default(4.0)
+  reviewCount   Int      @default(0)
+  verified      Boolean  @default(false)
+  lastVerified  DateTime?
+  ownerId       String?
+  featured      Boolean  @default(false)
+  featuredUntil DateTime?
+  tier          String   @default("free")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  happyHours    HappyHour[]
+  tags          RestaurantTag[]
+  flashAlerts   FlashAlert[]
+  owner         User?       @relation(fields: [ownerId], references: [id])
+}
+
+model HappyHour {
+  id           String   @id @default(cuid())
+  restaurantId String
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  label        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items        HHItem[]
+}
+
+model HHItem {
+  id          String @id @default(cuid())
+  happyHourId String
+  name        String
+  category    String
+  description String?
+  origPrice   Float?
+  salePrice   Float?
+  discount    String?
+
+  happyHour   HappyHour @relation(fields: [happyHourId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id            String @id @default(cuid())
+  name          String @unique
+  category      String
+  icon          String?
+
+  restaurants   RestaurantTag[]
+}
+
+model RestaurantTag {
+  restaurantId  String
+  tagId         String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tag           Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([restaurantId, tagId])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  role          String   @default("user")
+  lat           Float?
+  lng           Float?
+  notifyRadius  Float    @default(5)
+  optedInAlerts Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  restaurants   Restaurant[]
+  alertsSent    FlashAlertRecipient[]
+}
+
+model FlashAlert {
+  id           String   @id @default(cuid())
+  restaurantId String
+  message      String
+  discount     String?
+  validUntil   DateTime
+  radius       Float    @default(5)
+  status       String   @default("draft")
+  cost         Float    @default(0)
+  sentCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  recipients   FlashAlertRecipient[]
+}
+
+model FlashAlertRecipient {
+  id           String   @id @default(cuid())
+  alertId      String
+  userId       String
+  opened       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  alert        FlashAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
